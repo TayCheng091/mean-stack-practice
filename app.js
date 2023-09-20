@@ -1,3 +1,4 @@
+// Resource: https://www.youtube.com/watch?v=DQ9pZ2NKXRo&list=PLillGF-RfqbZMNtaOXJQiDebNXjVapWPZ&index=2&ab_channel=TraversyMedia
 // main server entry point file
 
 const express = require("express");
