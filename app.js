@@ -1,5 +1,5 @@
 // Resource: https://www.youtube.com/watch?v=DQ9pZ2NKXRo&list=PLillGF-RfqbZMNtaOXJQiDebNXjVapWPZ&index=2&ab_channel=TraversyMedia
-// 全攻略: https://www.udemy.com/course/html5-css3-z/learn/lecture/24052668#questions
+// 全攻略: https://www.udemy.com/course/html5-css3-z/learn/lecture/24059624#questions
 // 記得先安裝 local mongodb
 // main server entry point file
 
@@ -23,50 +23,84 @@ mongoose
 
 // Define a schema
 const studentSchema = new mongoose.Schema({
-  name: String,
-  age: Number,
-  major: String,
+  name: {
+    type: String,
+    minLength: [3, "Name must be at least 3 characters!!"],
+    maxLength: [20, "Name must be at most 10 characters!!"],
+    required: [true, "Name is required!!"],
+  },
+  age: {
+    type: Number,
+    required: [true, "Age is required!!"],
+    max: [100, "Age must be at most 100!!"],
+    default: 18,
+  },
+  major: {
+    type: String,
+    enum: ["Math", "English", "Computer Science", "Stock", "undecided"],
+    default: "undecided",
+  },
   scholarship: {
-    merit: Number,
-    other: Number,
+    merit: {
+      type: Number,
+      max: [10000, "Merit scholarship must be at most 10000!!"],
+      default: 0,
+    },
+    other: {
+      type: Number,
+      default: 0,
+    },
   },
 });
+
+studentSchema.methods.totalScholarship = function () {
+  return this.scholarship.merit + this.scholarship.other;
+};
 
 // Create a model for students
 const Student = mongoose.model("Student", studentSchema);
 
 // Find objects in students
-// Student.find().then((data) => {
+Student.find({ name: "Dago" }).then(([student]) => {
+  console.log("student = ", student);
+  console.log("totalScholarship = ", student.totalScholarship());
+});
+
+// Delete
+// Student.findOneAndDelete({ name: "James" }).then((data) => {
+//   console.log("data after findOneAndDelete = ", data);
+// });
+
+// Update: https://mongoosejs.com/docs/api/model.html#Model.findOneAndUpdate()
+// new: bool - true to return the modified document rather than the original. defaults to false
+// runValidators: if true, runs update validators on this command. Update validators validate the update operation against the model's schema.
+// Student.findOneAndUpdate(
+//   { name: "James" },
+//   { "scholarship.merit": 40000 },
+//   { new: true, runValidators: true }
+// ).then((data) => {
 //   console.log("data = ", data);
 // });
 
-// Update
-Student.findOneAndUpdate(
-  { name: "James" },
-  { major: "Stock" },
-  { new: true }
-).then((data) => {
-  console.log("data = ", data);
-});
-
 // Create an object
-// const Jon = new Student({
-//   name: "James",
-//   age: 31,
-//   major: "English",
+// const newStudent = new Student({
+//   name: "Ishihara Satomi",
+//   age: 311,
+//   // major: "Japanese",
 //   scholarship: {
-//     merit: 1000,
-//     other: 500,
+//     merit: "30000",
+//     other: "400",
 //   },
 // });
 
-// Save Jon to database
-// Jon.save()
+// Save newStudent to database
+// newStudent
+//   .save()
 //   .then(() => {
-//     console.log("Jon saved to database successfully!!");
+//     console.log("New student saved to database successfully!!");
 //   })
 //   .catch((err) => {
-//     console.log("Error: ", err);
+//     console.log("Error = ", err);
 //   });
 
 const app = express();
