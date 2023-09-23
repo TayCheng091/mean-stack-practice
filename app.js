@@ -10,6 +10,7 @@ const bodyParser = require("body-parser");
 const passport = require("passport");
 const mongoose = require("mongoose");
 const config = require("./config/database");
+const fs = require("fs");
 
 // Connect to database
 mongoose
@@ -53,18 +54,62 @@ const studentSchema = new mongoose.Schema({
   },
 });
 
+// Create a instance method
 studentSchema.methods.totalScholarship = function () {
   return this.scholarship.merit + this.scholarship.other;
 };
 
+studentSchema.methods.addAge = function () {
+  this.age++;
+  this.save();
+};
+
+// create a static method
+studentSchema.statics.setOtherToZero = function () {
+  return this.updateMany({}, { "scholarship.other": 0 });
+};
+
+// defined middleware
+studentSchema.pre("save", async function (next) {
+  fs.writeFile(
+    "record.txt",
+    `One data is trying to be saved [${new Date()}]\n`,
+    (err) => {
+      if (err) throw err;
+    }
+  );
+});
+
+studentSchema.post("save", async function (doc, next) {
+  fs.appendFile("record.txt", `One data is saved [${new Date()}]`, (err) => {
+    if (err) throw err;
+  });
+});
+
 // Create a model for students
 const Student = mongoose.model("Student", studentSchema);
 
+// Set other to zero
+// Student.setOtherToZero().then((data) => {
+//   console.log("data = ", data);
+// });
+
 // Find objects in students
-Student.find({ name: "Dago" }).then(([student]) => {
-  console.log("student = ", student);
-  console.log("totalScholarship = ", student.totalScholarship());
-});
+// Student.findOne({ name: "Thomas" })
+//   .then((data) => {
+//     // data.addAge();
+//     console.log("data = ", data);
+//   })
+//   .catch((err) => {
+//     console.log("err = ", err);
+//   });
+// Student.find()
+//   .then((data) => {
+//     console.log("data = ", data);
+//   })
+//   .catch((err) => {
+//     console.log("err = ", err);
+//   });
 
 // Delete
 // Student.findOneAndDelete({ name: "James" }).then((data) => {
@@ -84,13 +129,13 @@ Student.find({ name: "Dago" }).then(([student]) => {
 
 // Create an object
 // const newStudent = new Student({
-//   name: "Ishihara Satomi",
-//   age: 311,
-//   // major: "Japanese",
-//   scholarship: {
-//     merit: "30000",
-//     other: "400",
-//   },
+// name: "Gina",
+// age: 41,
+// major: "English",
+// scholarship: {
+//   merit: "2300",
+//   other: "1300",
+// },
 // });
 
 // Save newStudent to database
@@ -100,6 +145,7 @@ Student.find({ name: "Dago" }).then(([student]) => {
 //     console.log("New student saved to database successfully!!");
 //   })
 //   .catch((err) => {
+//     console.log("Not save");
 //     console.log("Error = ", err);
 //   });
 
@@ -113,6 +159,10 @@ app.use(express.static(path.join(__dirname, "public")));
 // Set static folder
 app.use(express.static(path.join(__dirname, "public")));
 
+// Body parser middleware , if you don't use this, you can't get req.body
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
 // index route
 app.get("/", (req, res) => {
   res.send("Invalid enter point!!");
@@ -121,4 +171,38 @@ app.get("/", (req, res) => {
 // Start server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}!!`);
+});
+
+app.get("/students/:name", (req, res) => {
+  console.log("req.query = ", req.query);
+  const { name } = req.params;
+  Student.find({ name: name })
+    .then((data) => {
+      if (data) {
+        res.send(data);
+      } else {
+        res.send("There is no student data!!");
+      }
+    })
+    .catch((e) => {
+      console.log("err = ", e);
+    });
+});
+
+app.post("/student", (req, res) => {
+  console.log("req.body = ", req.body);
+  // res.send("Get post body");
+  const newStudent = new Student(req.body);
+  newStudent
+    .save()
+    .then(() => {
+      Student.find().then((data) => {
+        console.log("Add new student successfully!!");
+        res.send(data);
+      });
+    })
+    .catch((err) => {
+      console.log("Not save");
+      console.log("Error = ", err);
+    });
 });
